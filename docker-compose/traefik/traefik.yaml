@@ -1,0 +1,143 @@
+#    _____  _     ___________  ___   _     
+#   |  __ \| |   |  _  | ___ \/ _ \ | |    
+#   | |  \/| |   | | | | |_/ / /_\ \| |    
+#   | | __ | |   | | | | ___ \  _  || |    
+#   | |_\ \| |___\ \_/ / |_/ / | | || |____
+#    \____/\_____/\___/\____/\_| |_/\_____/
+#                                          
+#                                          
+
+global:
+  checkNewVersion: false # Check for new versions of Traefik
+  sendAnonymousUsage: false # Control whether to send usage data
+
+#    _____ _   _ _____________   _______ _____ _____ _   _ _____ _____       __  _____ _      _____ 
+#   |  ___| \ | |_   _| ___ \ \ / / ___ \  _  |_   _| \ | |_   _/  ___|     / / |_   _| |    /  ___|
+#   | |__ |  \| | | | | |_/ /\ V /| |_/ / | | | | | |  \| | | | \ `--.     / /    | | | |    \ `--. 
+#   |  __|| . ` | | | |    /  \ / |  __/| | | | | | | . ` | | |  `--. \   / /     | | | |     `--. \
+#   | |___| |\  | | | | |\ \  | | | |   \ \_/ /_| |_| |\  | | | /\__/ /  / /      | | | |____/\__/ /
+#   \____/\_| \_/ \_/ \_| \_| \_/ \_|    \___/ \___/\_| \_/ \_/ \____/  /_/       \_/ \_____/\____/ 
+#                                                                                                   
+#                                                                                                   
+
+# Define entrypoints for incoming traffic
+entryPoints:
+  web: 
+    address: 80
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true # Redirect HTTP to HTTPS
+
+  websecure:
+    address: 443
+    http:
+      tls:
+        certResolver: myresolver # Use Let's Encrypt certificates for HTTPS
+
+# Define ACME TLS certificates with Lets Encrypt
+certificatesResolvers:
+  myresolver:
+# Staging TLS Configuration
+
+# staging:
+#   acme:
+#     email: your-email@example.com
+#     storage: /etc/traefik/certs/acme.json
+#     caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+#     -- (Optional) Remove this section, when using DNS Challenge
+#     httpChallenge:
+#       entryPoint: web
+#     -- (Optional) Configure DNS Challenge
+#     dnsChallenge:
+#       provider: your-resolver (e.g. cloudflare)
+#       resolvers:
+#         - "1.1.1.1:53"
+#         - "8.8.8.8:53"
+
+# Production TLS Configuration
+
+# production:
+#   acme:
+#     email: your-email@example.com
+#     storage: /etc/traefik/certs/acme.json
+#     caServer: "https://acme-v02.api.letsencrypt.org/directory"
+#     -- (Optional) Remove this section, when using DNS Challenge
+#     httpChallenge:
+#       entryPoint: web
+#     -- (Optional) Configure DNS Challenge
+#     dnsChallenge:
+#       provider: your-resolver (e.g. cloudflare)
+#       resolvers:
+#         - "1.1.1.1:53"
+#         - "8.8.8.8:53"
+
+#   ______  ___   _____ _   _ ______  _____  ___  ____________       __   ___  ______ _____ 
+#   |  _  \/ _ \ /  ___| | | || ___ \|  _  |/ _ \ | ___ \  _  \     / /  / _ \ | ___ \_   _|
+#   | | | / /_\ \\ `--.| |_| || |_/ /| | | / /_\ \| |_/ / | | |    / /  / /_\ \| |_/ / | |  
+#   | | | |  _  | `--. \  _  || ___ \| | | |  _  ||    /| | | |   / /   |  _  ||  __/  | |  
+#   | |/ /| | | |/\__/ / | | || |_/ /\ \_/ / | | || |\ \| |/ /   / /    | | | || |    _| |_ 
+#   |___/ \_| |_/\____/\_| |_/\____/  \___/\_| |_/\_| \_|___/   /_/     \_| |_/\_|    \___/ 
+#                                                                                           
+#                                                                                 
+
+api:
+dashboard: true # Enable the Traefik dashboard
+insecure: false # Enforce secure dashboard access
+
+# Middlewares for authentication
+middlewares:
+  dashboard-auth:
+    basicAuth:
+      users:
+        - "admin:inserthashedpwhere" # Replace with your hashed password
+
+# Routers for dashboard
+http:
+  routers:
+    dashboard:
+      rule: "Host(`dashboard.example.com`)" # Change to your domain
+      entryPoints:
+        - websecure
+      middlewares:
+        - dashboard-auth # Attach authentication
+      service: api@internal # Internal Traefik API
+      tls: {} # Enforce HTTPS
+
+#    _     _____ _____  _____       __ ___  ___ _____ ___________ _____ _____  _____ 
+#   | |   |  _  |  __ \/  ___|     / / |  \/  ||  ___|_   _| ___ \_   _/  __ \/  ___|
+#   | |   | | | | |  \/\ `--.     / /  | .  . || |__   | | | |_/ / | | | /  \/\ `--. 
+#   | |   | | | | | __  `--. \   / /   | |\/| ||  __|  | | |    /  | | | |     `--. \
+#   | |___\ \_/ / |_\ \/\__/ /  / /    | |  | || |___  | | | |\ \ _| |_| \__/\/\__/ /
+#   \_____/\___/ \____/\____/  /_/     \_|  |_/\____/  \_/ \_| \_|\___/ \____/\____/ 
+#                                                                                    
+#                                                                                    
+
+#   # Enable Prometheus Metrics (common for monitoring setups)
+#   metrics:
+#     prometheus:
+#       enabled: true
+#       entryPoint: metrics
+#       addEntryPointsLabels: true
+#       addServicesLabels: true
+#   
+#   # Logs - Configure Traefik logging levels and location
+#   log:
+#     level: INFO  # DEBUG, INFO, WARN, ERROR
+#     filePath: "/var/log/traefik/traefik.log"  # Store logs inside container
+#   
+#   # Access logs - Optional, but best for visibility
+#   accessLog:
+#     filePath: "/var/log/traefik/access.log"  # Access logs inside container
+#     bufferingSize: 100  # Buffer access logs for performance
+#   
+#   # Providers - Static configurations to define services
+#   providers:
+#     docker:
+#       endpoint: "unix:///var/run/docker.sock"  # Docker socket path inside container
+#       exposedByDefault: false  # Require explicit labels to expose services
+#       watch: true
+#     file:
+#       filename: "/etc/traefik/dynamic.yaml"  # Dynamic configuration file in container
